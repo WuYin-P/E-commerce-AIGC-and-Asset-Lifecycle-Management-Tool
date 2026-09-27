@@ -1,3 +1,4 @@
+
 <div align="center">
 
 # 电商模特图 Studio · Product Image Workbench
@@ -20,11 +21,28 @@ English: Import local product assets, compose structured references, and send im
 
 ## 工作台截图 · Screenshots
 
-> Screenshots are placeholders for the showcase. **Redact API keys, customer data, and other secrets before committing screenshots.**
+> 截图位已预留。请先对资产、客户信息和 API Key 打码，再将 PNG 文件放入 `docs/screenshots/`；文件名保持不变后，README 会自动显示预览。
+>
+> Screenshot slots are ready. **Redact assets, customer data, and API keys before committing screenshots.** Add the three PNG files to `docs/screenshots/` with the filenames below and the preview table will render automatically.
 
+| 页面 · View | 文件名 · Filename | 建议内容 · Suggested content |
+| --- | --- | --- |
+| 🖥️ 工作台 · Workbench | `workbench.png` | 资产库、结构化引用和任务创建 |
+| ✨ 结果 · Results | `results.png` | 任务时间线、生成结果和下载入口 |
+| ⚙️ 设置 · Settings | `settings.png` | 服务商配置和模型参数 |
+
+<details>
+<summary>截图上传后恢复预览 · Restore the preview after uploading screenshots</summary>
+
+将上表替换为下面的 Markdown 图片表格即可：
+
+```markdown
 | 工作台 · Workbench | 结果 · Results | 设置 · Settings |
 | --- | --- | --- |
 | ![Workbench screenshot](docs/screenshots/workbench.png) | ![Results screenshot](docs/screenshots/results.png) | ![Settings screenshot](docs/screenshots/settings.png) |
+```
+
+</details>
 
 ## 核心能力 · Core capabilities
 
