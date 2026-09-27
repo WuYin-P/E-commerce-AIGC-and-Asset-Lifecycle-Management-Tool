@@ -1,0 +1,65 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import sharp from 'sharp';
+import { createStore } from '../store.mjs';
+import { createJobs } from '../provider.mjs';
+
+test('slow requests keep waiting; retry is linked, idempotent and both images survive', async t => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'studio-retry-'));
+  const store = await createStore(dir);
+  t.after(async () => { store.db.close(); await rm(dir, { recursive: true, force: true }); });
+  const png = await sharp({ create: { width: 8, height: 8, channels: 3, background: '#fff' } }).png().toBuffer();
+  t.mock.timers.enable({ apis: ['Date'], now: Date.now() });
+  const requests = [];
+  const timeout = t.mock.method(AbortSignal, 'timeout');
+  t.mock.method(globalThis, 'fetch', (url, options) => new Promise((resolve, reject) => {
+    options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true });
+    requests.push({ options, finish: () => resolve(Response.json({ data: [{ b64_json: png.toString('base64') }] })) });
+  }));
+  store.put('threads', { id: 'thread', name: '新任务', named: false });
+  const jobs = createJobs(store, () => ({ baseUrl: 'http://mock/v1', model: 'test' }));
+  const input = { threadId: 'thread', ratio: '1:1', parts: [{ type: 'text', text: '测试图片' }], referenceIds: [] };
+  const original = jobs.submit(input);
+  const waitFor = async predicate => { for (let i = 0; i < 100; i++) { if (predicate()) return; await new Promise(resolve => setTimeout(resolve, 10)); } assert.fail('condition not met'); };
+  await waitFor(() => requests.length === 1);
+  assert.throws(() => jobs.retry(original.id), /3 分钟/);
+  assert.equal(jobs.state()[0].canRetry, false);
+  assert.equal(jobs.state()[0].waitingLong, false);
+  t.mock.timers.setTime(Date.now() + 180001);
+  assert.equal(jobs.state()[0].canRetry, true);
+  assert.equal(jobs.state()[0].waitingLong, true);
+  const retried = jobs.retry(original.id);
+  assert.equal(retried.retryOf, original.id);
+  assert.equal(jobs.retry(original.id).id, retried.id, 'repeat clicks must not submit again');
+  assert.equal(jobs.state()[0].retryId, retried.id);
+  assert.equal(jobs.state()[0].canRetry, false);
+  await waitFor(() => requests.length === 2);
+  assert.equal(store.get('jobs', original.id).status, 'running');
+  assert.equal(requests[0].options.signal.aborted, false);
+  assert.equal(timeout.mock.calls.length, 0, 'generation must not create a deadline abort signal');
+  requests[1].finish(); await waitFor(() => store.get('jobs', retried.id).status === 'succeeded');
+  requests[0].finish(); await waitFor(() => store.get('jobs', original.id).status === 'succeeded');
+  assert.equal(store.all('assets').length, 2);
+  assert.deepEqual(store.get('jobs', retried.id).parts, store.get('jobs', original.id).parts);
+  assert.equal(store.get('jobs', retried.id).retryOf, original.id);
+  assert.equal(jobs.retry(original.id).id, retried.id);
+  assert.ok(store.get('jobs', original.id).startedAt);
+});
+
+test('a disconnected request is unknown, not an upstream generation failure', async t => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'studio-disconnect-'));
+  const store = await createStore(dir);
+  t.after(async () => { store.db.close(); await rm(dir, { recursive: true, force: true }); });
+  t.mock.method(globalThis, 'fetch', async () => { throw new TypeError('fetch failed'); });
+  store.put('threads', { id: 'thread', name: '新任务', named: false });
+  const jobs = createJobs(store, () => ({ baseUrl: 'http://mock/v1', model: 'test' }));
+  const job = jobs.submit({ threadId: 'thread', ratio: '1:1', parts: [{ type: 'text', text: '测试' }], referenceIds: [] });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(store.get('jobs', job.id).status, 'interrupted');
+  assert.match(store.get('jobs', job.id).error, /结果未知/);
+  assert.equal(jobs.retry(job.id).retryOf, job.id);
+  await new Promise(resolve => setImmediate(resolve));
+});

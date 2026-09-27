@@ -1,0 +1,16 @@
+.superpowers/
+data/
+node_modules/
+
+# Local editor and generated artifacts
+.DS_Store
+fontconfig/cache/
+docx_render_check/
+docx_fonts/
+
+# Local analysis material and generated reports
+chat_extract*.txt
+system_understanding_extract.txt
+build_interview_report.py
+电商AIGC影像解决方案与耦合系统理解报告*
+fontconfig/

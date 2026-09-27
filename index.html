@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>电商模特图 Studio</title><link rel="stylesheet" href="/studio.css"><link rel="stylesheet" href="/settings.css">
+</head>
+<body>
+<div class="app" id="app">
+  <nav class="rail" aria-label="主导航">
+    <div class="brand" title="电商模特图 Studio">YS</div>
+    <button id="studioNav" class="rail-button active" aria-label="生成工作台"><i data-lucide="sparkles"></i>创作</button>
+    <button id="assetsNav" class="rail-button" aria-expanded="false" aria-controls="assetPanel"><i data-lucide="images"></i>资产</button>
+    <button id="tasksNav" class="rail-button" aria-expanded="true" aria-controls="threadPanel"><i data-lucide="list"></i>任务</button>
+    <button id="settingsNav" class="rail-button bottom"><i data-lucide="settings"></i>设置</button>
+  </nav>
+  <aside id="threadPanel" class="thread-panel">
+    <header class="panel-header"><strong>创作任务</strong><button class="icon-button" data-action="close-tasks" aria-label="收起任务列表">‹</button></header>
+    <button id="newThread" class="new-thread">＋ 新建任务</button>
+    <div class="section-label">最近任务</div><div id="threadList" class="thread-list"></div>
+    <div class="panel-foot muted">电商模特图 Studio<br><small>图片 · 灵感 · 创作记录</small></div>
+  </aside>
+  <aside id="assetPanel" class="asset-panel" aria-label="资产面板">
+    <div class="asset-inner">
+      <header class="panel-header"><strong>资产库</strong><button class="icon-button" data-action="close-assets" aria-label="关闭资产面板">×</button></header>
+      <div class="tabs" role="tablist" aria-label="资产分类">
+        <button role="tab" data-category="model" aria-selected="true">模特</button><button role="tab" data-category="clothing" aria-selected="false">服装</button><button role="tab" data-category="scene" aria-selected="false">场景</button>
+      </div>
+      <label class="filter-label" for="tagFilter">标签筛选<select id="tagFilter"><option value="all">全部</option><option value="untagged">未分类</option></select></label>
+      <div class="asset-meta"><span id="assetCount">0 张图片</span><span>最新在前</span></div>
+      <div id="assetGrid" class="asset-grid"></div>
+      <footer class="import-bar">
+        <div class="import-control"><button id="importButton" aria-expanded="false">＋ 导入图片</button><div class="import-menu" id="importMenu"><span class="muted">导入到</span><button data-import="model">模特</button><button data-import="clothing">服装</button><button data-import="scene">场景</button></div></div>
+        <small id="importStatus" aria-live="polite">也可拖入图片，选择分类导入</small>
+      </footer>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><div class="title-wrap"><button id="threadTitle" title="点击重命名任务">新任务</button><span id="pageState" class="muted">一张图片，一个新的可能</span></div><button id="allResults" class="secondary">▦ <span>全部生成结果</span><span id="resultCount" class="count">0</span></button></header>
+    <section id="workbench" class="workbench">
+      <div id="timeline" class="timeline" aria-label="生成时间线"></div>
+      <div class="composer-wrap">
+        <div class="composer">
+          <div class="composer-caption"><span>创作指令</span><div class="reference-actions"><span id="referenceCount">0 张参考图</span><button id="clearReferences" type="button" title="移除所有引用图片及提示词中的 @引用，保留普通文字" disabled>清空引用</button></div></div>
+          <div id="references" class="references" aria-label="当前引用图片"></div>
+          <div id="prompt" class="prompt" contenteditable="true" role="textbox" aria-multiline="true" aria-label="提示词" data-placeholder="描述你想要的画面，输入 @ 选择模特、服装或场景…"></div>
+          <div class="composer-tools"><button id="referenceButton" class="tool-button">＠ 引用资产</button><button id="ratioButton" class="tool-button" aria-haspopup="true">3:4 ▾</button><button id="resolutionButton" class="tool-button" aria-label="选择分辨率" aria-haspopup="true">1K ▾</button><span class="composer-hint">⌘ / Ctrl + Enter 生成</span><button id="sendButton" class="primary">生成图片 <span>↑</span></button></div>
+        </div>
+        <div id="composerStatus" class="composer-status" role="status"></div>
+      </div>
+    </section>
+    <section id="settings" class="settings" hidden>
+      <h1>API 服务</h1><p class="muted">选择现有服务，或自己定义图片接口。</p>
+      <div class="setting-card">
+        <div class="settings-grid">
+          <div class="field"><label for="provider">服务类型</label><select id="provider"><option value="openai">OpenAI 兼容</option><option value="dashscope">阿里云 DashScope 原生</option><option value="custom">自定义</option></select></div>
+          <div class="field" id="serviceNameField" hidden><label for="serviceName">服务名称</label><input id="serviceName" maxlength="80" placeholder="我的图片服务"></div>
+          <div class="field full"><label for="baseUrl" id="baseUrlLabel">API Base URL</label><input id="baseUrl" type="url" placeholder="https://api.example.com/v1" required spellcheck="false"><small id="baseUrlHelp">填写基础地址，接口路径由所选服务自动处理。</small></div>
+          <div class="field"><label for="apiKey">API Key</label><input id="apiKey" type="password" placeholder="填写 API Key" autocomplete="off"></div>
+          <div class="field"><label for="model">图片模型</label><input id="model" list="models" placeholder="选择或手动填写模型名称" spellcheck="false"><datalist id="models"></datalist></div>
+        </div>
+        <p id="providerHint" class="settings-help"></p>
+        <section id="customSettings" class="settings-section" hidden>
+          <div class="settings-row"><div><h2>自定义接口</h2><small>编辑请求格式，并指定从返回内容的哪里读取图片。</small></div><select id="interfaceTemplate" aria-label="载入配置模板"><option value="">从模板开始…</option><option value="openai">OpenAI 文生图 · JSON</option><option value="dashscope">DashScope · JSON</option><option value="multipart">OpenAI 图像编辑 · 文件上传</option></select></div>
+          <div class="settings-tabs" role="tablist" aria-label="自定义配置">
+            <button id="requestTab" role="tab" aria-selected="true" aria-controls="requestPanel">请求内容</button><button id="responseTab" role="tab" aria-selected="false" aria-controls="responsePanel" tabindex="-1">返回解析</button><button id="checkTab" role="tab" aria-selected="false" aria-controls="checkPanel" tabindex="-1">预览检查</button>
+          </div>
+          <div id="requestPanel" role="tabpanel" aria-labelledby="requestTab">
+            <div class="settings-grid"><div class="field"><label for="requestMethod">请求方法</label><select id="requestMethod"><option>POST</option><option>PUT</option></select></div><div class="field"><label for="requestEncoding">请求格式</label><select id="requestEncoding"><option value="json">JSON</option><option value="multipart">multipart/form-data（文件上传）</option></select></div></div>
+            <div class="settings-editor"><div class="field"><label for="requestBody" id="requestBodyLabel">请求体模板</label><textarea id="requestBody" class="settings-code" rows="12" spellcheck="false" aria-describedby="bodyHelp"></textarea><small id="bodyHelp">变量在发送时替换；图片数组保留数组类型。</small></div><aside class="settings-variables"><span>插入工作台变量</span><div class="variable-buttons"><button data-insert-variable="prompt">{{prompt}} 提示词</button><button data-insert-variable="images">{{images}} 参考图数组</button><button data-insert-variable="model">{{model}} 模型</button><button data-insert-variable="size">{{size}} 输出尺寸</button><button data-insert-variable="content">{{content}} 消息内容数组</button></div><small>插入到请求体当前光标处。</small><div class="field"><label for="imageEncoding">参考图编码</label><select id="imageEncoding"><option value="data-url">Base64 Data URL</option><option value="base64">Base64（不含前缀）</option></select><small id="imageEncodingHelp">图片来自本轮引用，顺序保持一致。</small></div></aside></div>
+            <details><summary>请求头与身份验证</summary><div class="field"><label for="requestHeaders">请求头 JSON</label><textarea id="requestHeaders" class="settings-code" rows="4" spellcheck="false"></textarea><small>认证值使用 {{apiKey}}。Content-Type 根据请求格式自动设置。</small></div></details>
+            <details><summary>图片限制与尺寸格式</summary><div class="settings-grid"><div class="field"><label for="maxImages">最多参考图数</label><input id="maxImages" type="number" min="0" max="16" value="3"></div><div class="field"><label for="maxImageMB">单张图片上限（MB）</label><input id="maxImageMB" type="number" min="1" max="25" value="10"></div><div class="field"><label for="sizeSeparator">尺寸分隔符</label><select id="sizeSeparator"><option value="x">1024x1024</option><option value="*">1024*1024</option></select></div></div></details>
+          </div>
+          <div id="responsePanel" role="tabpanel" aria-labelledby="responseTab" hidden>
+            <div class="settings-grid"><div class="field"><label for="resultType">返回的图片格式</label><select id="resultType"><option value="url">图片 URL</option><option value="base64">Base64 图片</option></select></div><div class="field"><label for="imagePath">图片字段路径</label><input id="imagePath" class="settings-code" spellcheck="false"></div></div>
+            <div class="field"><label for="errorPath">错误信息路径（可选）</label><input id="errorPath" class="settings-code" spellcheck="false"></div>
+            <div class="field"><div class="settings-row"><label for="responseSample">返回 JSON 示例</label><button id="tryExtract" class="secondary">试读图片字段</button></div><textarea id="responseSample" rows="7" class="settings-code" spellcheck="false"></textarea></div><p id="extractStatus" class="status" role="status"></p>
+            <p class="settings-help">按一次响应直接读取图片；先返回任务 ID、再查询结果的接口需另行适配。示例只在当前页面使用，不会发送或保存。</p>
+          </div>
+          <div id="checkPanel" role="tabpanel" aria-labelledby="checkTab" hidden><div class="settings-row"><h2>发送内容预览</h2><small>示例数据 · Key 已隐藏</small></div><pre id="requestPreview" class="settings-code"></pre><p class="settings-help">参考图以简写展示，无图时会省略 {{images}} 对应字段。</p><div class="settings-row"><span>本地配置检查</span><button id="checkAgain" class="secondary">重新检查</button></div><p id="checkStatus" class="status" role="status"></p></div>
+        </section>
+        <div class="settings-footer"><small>密钥由本地服务保存，浏览器不保存密钥。</small><div class="actions"><button class="secondary" id="testConnection">测试连接</button><button class="primary" id="saveSettings">保存设置</button></div></div>
+        <p id="status" class="status" aria-live="polite"></p>
+        <p class="settings-help" id="testHelp">测试连接只读取模型列表，不生成图片；模型列表不代表图片编辑能力。</p>
+      </div>
+    </section>
+  </main>
+</div>
+<input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" multiple hidden>
+<div id="dropOverlay" class="drop-overlay" hidden><div class="drop-sheet"><h2>把图片放入一个分类</h2><p>松开鼠标即可导入；图片不会自动打标签。</p><div class="drop-zones"><div data-drop="model">模特</div><div data-drop="clothing">服装</div><div data-drop="scene">场景</div></div></div></div>
+<div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+<aside id="resultDrawer" class="result-drawer" aria-label="全部生成结果" hidden><header class="panel-header"><div><strong>全部生成结果</strong><small id="drawerCount" class="muted"></small></div><button class="icon-button" id="closeResults" aria-label="关闭全部生成结果">×</button></header><div id="resultGrid" class="result-grid"></div></aside>
+<div id="contextMenu" class="context-menu" popover="auto"></div>
+<dialog id="preview" class="preview-dialog"><button id="closePreview" class="preview-close icon-button" aria-label="关闭大图预览">×</button><div class="preview-layout"><div class="preview-image-wrap"><img id="previewImage" alt=""></div><section class="preview-details" id="previewDetails"></section></div></dialog>
+<dialog id="renameDialog" class="rename-dialog"><form id="renameForm"><h2 id="renameTitle">重命名</h2><label for="renameInput">名称</label><input id="renameInput" required maxlength="80"><div class="actions"><button type="button" id="cancelRename" class="secondary">取消</button><button class="primary" type="submit">保存</button></div></form></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+<script src="/lucide.js"></script><script type="module" src="/app.js"></script>
+</body></html>
